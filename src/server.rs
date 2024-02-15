@@ -25,6 +25,7 @@ impl Acceptor for TlsAcceptor {
     type Stream<T: Stream> = TlsStream<T>;
     type Accept<T: Stream> = Accept<T>;
 
+    #[inline(always)]
     fn accept<T: Stream>(&self, stream: T) -> Self::Accept<T> {
         TlsAcceptor::accept(self, stream)
     }
@@ -37,6 +38,7 @@ impl Acceptor for RawAcceptor {
     type Stream<T: Stream> = T;
     type Accept<T: Stream> = Ready<Result<T, io::Error>>;
 
+    #[inline(always)]
     fn accept<T: Stream>(&self, stream: T) -> Self::Accept<T> {
         future::ready(Ok(stream))
     }
@@ -49,6 +51,7 @@ impl<T: Acceptor> Acceptor for MaybeAcceptor<T> {
     type Stream<U: Stream> = MaybeStream<T::Stream<U>, U>;
     type Accept<U: Stream> = MaybeAccept<T, U>;
 
+    #[inline(always)]
     fn accept<U: Stream>(&self, stream: U) -> Self::Accept<U> {
         match &self.0 {
             Some(acceptor) => MaybeAccept::Tls(acceptor.accept(stream)),
@@ -63,6 +66,7 @@ pub enum MaybeStream<T, U> {
 }
 
 impl<T: AsyncRead + Unpin, U: AsyncRead + Unpin> AsyncRead for MaybeStream<T, U> {
+    #[inline(always)]
     fn poll_read(
         self: Pin<&mut Self>,
         context: &mut Context<'_>,
@@ -76,6 +80,7 @@ impl<T: AsyncRead + Unpin, U: AsyncRead + Unpin> AsyncRead for MaybeStream<T, U>
 }
 
 impl<T: AsyncWrite + Unpin, U: AsyncWrite + Unpin> AsyncWrite for MaybeStream<T, U> {
+    #[inline(always)]
     fn poll_write(
         self: Pin<&mut Self>,
         context: &mut Context<'_>,
@@ -87,6 +92,7 @@ impl<T: AsyncWrite + Unpin, U: AsyncWrite + Unpin> AsyncWrite for MaybeStream<T,
         }
     }
 
+    #[inline(always)]
     fn poll_flush(self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
         match self.get_mut() {
             Self::Tls(tls) => Pin::new(tls).poll_flush(context),
@@ -94,6 +100,7 @@ impl<T: AsyncWrite + Unpin, U: AsyncWrite + Unpin> AsyncWrite for MaybeStream<T,
         }
     }
 
+    #[inline(always)]
     fn poll_shutdown(
         self: Pin<&mut Self>,
         context: &mut Context<'_>,
